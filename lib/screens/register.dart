@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:recipe_app/screens/login.dart';
+
+import '../services/network_handler.dart';
 
 class registerPage extends StatefulWidget {
   const registerPage({super.key});
@@ -9,12 +13,33 @@ class registerPage extends StatefulWidget {
 }
 
 class _registerPageState extends State<registerPage> {
-  String firstname = '';
-  String lastname = '';
-  String username = '';
+  String error = '';
+  String first_name = '';
+  String last_name = '';
+  String email_address = '';
+  String password = '';
 
-  TextEditingController password = TextEditingController();
-  TextEditingController verifypassword = TextEditingController();
+  Future<bool> register(String firstName, String lastName, String emailAddress,
+      String password) async {
+    //check if login
+
+    Map registerStatus = jsonDecode(await NetworkHandler.post("/users/signup", {
+      "first_name": first_name,
+      "last_name": last_name,
+      "email_address": email_address,
+      "password": password,
+    }));
+
+    if (registerStatus["status"] == 'success') {
+      print("User created");
+      print(registerStatus);
+      return true;
+    }
+    setState(() {
+      error = 'something went wrong';
+    });
+    return false;
+  }
 
   final GlobalKey<FormState> _formkey = GlobalKey<FormState>();
   @override
@@ -92,8 +117,8 @@ class _registerPageState extends State<registerPage> {
                                     },
                                     onChanged: (value) {
                                       setState(() {
-                                        // error = "";
-                                        // first_name = value;
+                                        error = "";
+                                        first_name = value;
                                       });
                                     },
                                     decoration: InputDecoration(
@@ -125,7 +150,7 @@ class _registerPageState extends State<registerPage> {
                                     onChanged: (value) {
                                       setState(() {
                                         // error = "";
-                                        // last_name = value;
+                                        last_name = value;
                                       });
                                     },
                                     decoration: InputDecoration(
@@ -161,7 +186,7 @@ class _registerPageState extends State<registerPage> {
                                 onChanged: (value) {
                                   setState(() {
                                     // error = "";
-                                    // email_address = value;
+                                    email_address = value;
                                   });
                                 },
                                 decoration: InputDecoration(
@@ -197,7 +222,7 @@ class _registerPageState extends State<registerPage> {
                                 onChanged: (value) {
                                   setState(() {
                                     // error = "";
-                                    // phone_number = value;
+                                    password = value;
                                   });
                                 },
                                 decoration: InputDecoration(
@@ -253,15 +278,14 @@ class _registerPageState extends State<registerPage> {
                                   BorderRadius.all(Radius.circular(5))),
                           child: TextButton(
                             onPressed: () async {
-                              // if (await register(
-                              //     first_name,
-                              //     last_name,
-                              //     email_address,
-                              //     phone_number,
-                              //     department,
-                              //     organization)) {
-                              //   Navigator.pop(context);
-                              // }
+                              if (await register(
+                                first_name,
+                                last_name,
+                                email_address,
+                                password,
+                              )) {
+                                Navigator.pop(context);
+                              }
                             },
                             child: const Text(
                               'REGISTER',

@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:recipe_app/services/recipeService.dart';
+import 'package:recipe_app/screens/login.dart';
+import 'package:recipe_app/services/network_handler.dart';
+import 'package:readmore/readmore.dart';
+import 'package:recipe_app/services/secure_storage.dart';
 
 class RecipePage extends StatefulWidget {
   const RecipePage({super.key});
@@ -21,8 +24,8 @@ class _RecipePageState extends State<RecipePage> {
 
   Future<bool> updateRecipe(int recipeId, Object updateBody) async {
     updateBody = json.encode(updateBody);
-    Map updateStatus =
-        jsonDecode(await RecipeService.patch("/recipes/$recipeId", updateBody));
+    Map updateStatus = jsonDecode(
+        await NetworkHandler.patch("/recipes/$recipeId", updateBody));
     print(updateStatus);
     if (updateStatus["status"] == "success") {
       print("recipe updated");
@@ -38,7 +41,7 @@ class _RecipePageState extends State<RecipePage> {
 
   Future<bool> createRecipe(
       String title, String image, String description) async {
-    Map recipeStatus = jsonDecode(await RecipeService.post("/recipes", {
+    Map recipeStatus = jsonDecode(await NetworkHandler.post("/recipes", {
       "title": title,
       "image": image,
       "description": description,
@@ -56,10 +59,16 @@ class _RecipePageState extends State<RecipePage> {
     return false;
   }
 
+  void logOut() {
+    SecureStore.logout();
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => const LoginPage()));
+  }
+
   void deleteRecipe({int recipeID = 0}) async {
     try {
       print(recipeID);
-      final response = await RecipeService.delete('/recipes/$recipeID');
+      final response = await NetworkHandler.delete('/recipes/$recipeID');
       // final jsonData = jsonDecode(response)['data']['recipes'];
 
       print(response);
@@ -71,7 +80,7 @@ class _RecipePageState extends State<RecipePage> {
 
   void getRecipeList() async {
     try {
-      final response = await RecipeService.get(endpoint: '/recipes');
+      final response = await NetworkHandler.get(endpoint: '/recipes');
       final jsonData = jsonDecode(response)['data']['recipes'];
       print(response);
 
@@ -98,6 +107,18 @@ class _RecipePageState extends State<RecipePage> {
         appBar: AppBar(
           title: const Text('Recipe Menu'),
           backgroundColor: const Color.fromARGB(255, 255, 175, 14),
+          actions: [
+            TextButton(
+              onPressed: () {
+                logOut();
+              },
+              child: const Text('Log Out',
+                  style: TextStyle(
+                      fontSize: 17.0,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
         ),
         body: ListView(
           children: [
@@ -162,7 +183,19 @@ class _RecipePageState extends State<RecipePage> {
                                     width: 100.0, // fixed width and height
                                     child: Image.network('${recipe['image']}')),
                                 title: Text('${recipe['title']}'),
-                                subtitle: Text('${recipe['description']}'),
+                                // subtitle: Text('${recipe['description']}'),
+                                subtitle: ReadMoreText(
+                                  '${recipe['description']}',
+                                  trimLines: 2,
+                                  colorClickableText:
+                                      const Color.fromARGB(255, 238, 18, 91),
+                                  trimMode: TrimMode.Line,
+                                  trimCollapsedText: ' Show more',
+                                  trimExpandedText: ' Show less',
+                                  moreStyle: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
+                                ),
                                 trailing: PopupMenuButton(
                                   itemBuilder: (context) {
                                     return [

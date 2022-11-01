@@ -1,5 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:recipe_app/screens/recipelist.dart';
 import 'package:recipe_app/screens/register.dart';
+import 'package:recipe_app/services/network_handler.dart';
+
+import '../services/secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,6 +15,39 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+
+  String _email = "";
+  String _password = "";
+  String _error = "";
+
+  Future<bool> submitLogin() async {
+    try {
+      String userData = await NetworkHandler.post(
+          "/users/login", {"email_address": _email, "password": _password});
+      Map responseData = jsonDecode(userData);
+      print(responseData);
+      Map data = responseData["data"];
+
+      print(responseData["data"]["token"]);
+      SecureStore.storeToken("jwt-auth", data["token"]);
+      Map<String, dynamic> mapUser = data['user'];
+      SecureStore.createUser(mapUser);
+      return true;
+    } catch (error) {
+      setState(() {
+        _error = error.toString();
+        print(_error);
+      });
+      AlertDialog(
+        title: const Text("Error"),
+        content: Text(_error),
+        backgroundColor: Colors.black,
+      );
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,14 +113,14 @@ class _LoginPageState extends State<LoginPage> {
                               onChanged: (value) {
                                 setState(() {
                                   // error = "";
-                                  // email_address = value;
+                                  _email = value;
                                 });
                               },
                               decoration: InputDecoration(
                                   contentPadding:
                                       const EdgeInsets.only(left: 15),
                                   border: InputBorder.none,
-                                  hintText: 'username',
+                                  hintText: 'Email',
                                   hintStyle:
                                       TextStyle(color: Colors.grey.shade400)),
                             ),
@@ -110,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                               onChanged: (value) {
                                 setState(() {
                                   // error = "";
-                                  // phone_number = value;
+                                  _password = value;
                                 });
                               },
                               decoration: InputDecoration(
@@ -130,15 +169,13 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.all(Radius.circular(5))),
                         child: TextButton(
                           onPressed: () async {
-                            // if (await register(
-                            //     first_name,
-                            //     last_name,
-                            //     email_address,
-                            //     phone_number,
-                            //     department,
-                            //     organization)) {
-                            //   Navigator.pop(context);
-                            // }
+                            if (await submitLogin()) {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const RecipePage()));
+                            }
                           },
                           child: const Text(
                             'LOGIN',
